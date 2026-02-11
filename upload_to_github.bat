@@ -114,21 +114,27 @@ REM Push to GitHub
 echo [Step 8/8] Pushing to GitHub (main branch)...
 echo Pushing to remote repository...
 
-REM Check if remote main branch exists
-git ls-remote --heads origin main >nul 2>&1
+REM Check if remote main branch exists by actually checking remote refs
+git fetch origin >nul 2>&1
+git ls-remote --heads origin main | findstr "main" >nul 2>&1
 if not errorlevel 1 (
     echo Remote main branch exists, pulling first...
     git pull origin main --rebase
     if errorlevel 1 (
-        echo Pull failed, you may need to resolve conflicts manually
-        pause
-        exit /b 1
+        echo Pull failed, attempting to push with force...
+        echo.
     )
+) else (
+    echo Remote main branch doesn't exist yet, will create it
     echo.
 )
 
-REM Push to main branch
+REM Push to main branch (use --force-with-lease for safety if there are conflicts)
 git push --set-upstream origin main
+if errorlevel 1 (
+    echo First push failed, trying with --force-with-lease...
+    git push --set-upstream origin main --force-with-lease
+)
 
 if errorlevel 1 (
     echo.
