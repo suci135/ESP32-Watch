@@ -103,7 +103,21 @@ if "%CURRENT_BRANCH%"=="" (
 REM Push to GitHub
 echo [Step 7/7] Pushing to GitHub...
 echo Pushing to remote repository...
-git push -u origin %CURRENT_BRANCH%
+
+REM First try to pull if remote branch exists
+git fetch origin %CURRENT_BRANCH% >nul 2>&1
+if not errorlevel 1 (
+    echo Remote branch exists, pulling first...
+    git pull origin %CURRENT_BRANCH% --rebase
+    if errorlevel 1 (
+        echo Pull failed, you may need to resolve conflicts manually
+        pause
+        exit /b 1
+    )
+)
+
+REM Push with upstream setting
+git push --set-upstream origin %CURRENT_BRANCH%
 
 if errorlevel 1 (
     echo.
@@ -115,7 +129,9 @@ if errorlevel 1 (
     echo 1. Repository not created on GitHub
     echo 2. Authentication required
     echo 3. Network connection issue
-    echo 4. Branch conflicts - try: git pull origin %CURRENT_BRANCH% --rebase
+    echo.
+    echo Try manually:
+    echo   git push --set-upstream origin %CURRENT_BRANCH%
     echo.
     pause
     exit /b 1
@@ -127,6 +143,8 @@ if errorlevel 1 (
     echo.
     echo Project pushed to:
     echo https://github.com/suci135/ESP32-Watch
+    echo.
+    echo Branch %CURRENT_BRANCH% is now tracking origin/%CURRENT_BRANCH%
     echo.
 )
 
