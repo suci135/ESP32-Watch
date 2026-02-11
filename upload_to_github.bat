@@ -88,36 +88,47 @@ if errorlevel 1 (
 )
 echo.
 
-REM Get current branch
+REM Ensure we're on main branch
+echo [Step 7/7] Ensuring main branch...
 for /f "delims=" %%i in ('git branch --show-current') do set CURRENT_BRANCH=%%i
+
 if "%CURRENT_BRANCH%"=="" (
-    set CURRENT_BRANCH=main
-    echo Setting default branch to main...
-    git branch -M main
+    echo Creating and switching to main branch...
+    git checkout -b main
+    echo.
+) else if not "%CURRENT_BRANCH%"=="main" (
+    echo Current branch: %CURRENT_BRANCH%
+    echo Switching to main branch...
+    git checkout main >nul 2>&1
+    if errorlevel 1 (
+        echo Main branch doesn't exist, creating it...
+        git checkout -b main
+    )
     echo.
 ) else (
-    echo Current branch: %CURRENT_BRANCH%
+    echo Already on main branch
     echo.
 )
 
 REM Push to GitHub
-echo [Step 7/7] Pushing to GitHub...
+echo [Step 8/8] Pushing to GitHub (main branch)...
 echo Pushing to remote repository...
 
-REM First try to pull if remote branch exists
-git fetch origin %CURRENT_BRANCH% >nul 2>&1
+REM Check if remote main branch exists
+git ls-remote --heads origin main >nul 2>&1
 if not errorlevel 1 (
-    echo Remote branch exists, pulling first...
-    git pull origin %CURRENT_BRANCH% --rebase
+    echo Remote main branch exists, pulling first...
+    git pull origin main --rebase
     if errorlevel 1 (
         echo Pull failed, you may need to resolve conflicts manually
         pause
         exit /b 1
     )
+    echo.
 )
 
-REM Push with upstream setting
-git push --set-upstream origin %CURRENT_BRANCH%
+REM Push to main branch
+git push --set-upstream origin main
 
 if errorlevel 1 (
     echo.
@@ -129,9 +140,10 @@ if errorlevel 1 (
     echo 1. Repository not created on GitHub
     echo 2. Authentication required
     echo 3. Network connection issue
+    echo 4. Conflicts need to be resolved
     echo.
     echo Try manually:
-    echo   git push --set-upstream origin %CURRENT_BRANCH%
+    echo   git push --set-upstream origin main
     echo.
     pause
     exit /b 1
@@ -144,7 +156,8 @@ if errorlevel 1 (
     echo Project pushed to:
     echo https://github.com/suci135/ESP32-Watch
     echo.
-    echo Branch %CURRENT_BRANCH% is now tracking origin/%CURRENT_BRANCH%
+    echo Branch: main
+    echo All changes are now on the main branch
     echo.
 )
 
