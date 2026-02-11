@@ -1,109 +1,131 @@
 @echo off
 chcp 65001 >nul
 echo ====================================
-echo ESP32-Watch GitHub 上传脚本
+echo ESP32-Watch GitHub Upload Script
 echo ====================================
 echo.
 
-REM 配置Git用户信息
-echo [配置] 设置Git用户信息...
+REM Configure Git user info
+echo [Config] Setting Git user info...
 git config user.name "Suci"
 git config user.email "3314881686@qq.com"
-echo Git用户配置完成
+echo Git user configured
 echo.
 
-REM 检查是否已经初始化Git仓库
+REM Check if Git repo is initialized
 if not exist ".git" (
-    echo [步骤 1/6] 初始化Git仓库...
+    echo [Step 1/7] Initializing Git repository...
     git init
-    echo Git仓库初始化完成
+    echo Git repository initialized
     echo.
 ) else (
-    echo [步骤 1/6] Git仓库已存在，跳过初始化
+    echo [Step 1/7] Git repository exists, skipping
     echo.
 )
 
-REM 检查是否已添加远程仓库
+REM Check remote repository
 git remote get-url origin >nul 2>&1
 if errorlevel 1 (
-    echo [步骤 2/6] 添加远程仓库...
+    echo [Step 2/7] Adding remote repository...
     git remote add origin https://github.com/suci135/ESP32-Watch.git
-    echo 远程仓库添加完成
+    echo Remote repository added
     echo.
 ) else (
-    echo [步骤 2/6] 远程仓库已存在
+    echo [Step 2/7] Remote repository exists
     for /f "delims=" %%i in ('git remote get-url origin') do set CURRENT_REMOTE=%%i
-    echo 当前远程仓库: %CURRENT_REMOTE%
+    echo Current remote: %CURRENT_REMOTE%
     echo.
     
-    REM 如果远程仓库地址不正确，更新它
     if not "%CURRENT_REMOTE%"=="https://github.com/suci135/ESP32-Watch.git" (
-        echo 更新远程仓库地址...
+        echo Updating remote URL...
         git remote set-url origin https://github.com/suci135/ESP32-Watch.git
-        echo 远程仓库地址已更新
+        echo Remote URL updated
         echo.
     )
 )
 
-REM 添加所有文件
-echo [步骤 3/6] 添加文件到暂存区...
+REM Handle submodules
+echo [Step 3/7] Checking submodules...
+if exist ".gitmodules" (
+    echo Initializing submodules...
+    git submodule update --init --recursive
+    echo.
+) else (
+    echo Checking for untracked submodules...
+    if exist "lib\Arduino-CST816T-Library\.git" (
+        echo Found submodule: lib/Arduino-CST816T-Library
+        echo Adding as submodule...
+        git submodule add https://github.com/your-repo/Arduino-CST816T-Library.git lib/Arduino-CST816T-Library 2>nul
+        if errorlevel 1 (
+            echo Submodule already tracked or needs manual setup
+        )
+        echo.
+    )
+)
+
+REM Add all files
+echo [Step 4/7] Adding files to staging area...
 git add .
-echo 文件添加完成
+git add -u
+echo Files added
 echo.
 
-REM 提交更改
-echo [步骤 4/6] 提交更改...
-set /p COMMIT_MSG="请输入提交信息 (直接回车使用默认信息): "
+REM Show status
+echo [Step 5/7] Current status:
+git status --short
+echo.
+
+REM Commit changes
+echo [Step 6/7] Committing changes...
+set /p COMMIT_MSG="Enter commit message (press Enter for default): "
 if "%COMMIT_MSG%"=="" (
     set COMMIT_MSG=Update project files
 )
 git commit -m "%COMMIT_MSG%"
-echo 提交完成
+if errorlevel 1 (
+    echo No changes to commit or commit failed
+    echo.
+)
 echo.
 
-REM 获取当前分支名
+REM Get current branch
 for /f "delims=" %%i in ('git branch --show-current') do set CURRENT_BRANCH=%%i
 if "%CURRENT_BRANCH%"=="" (
     set CURRENT_BRANCH=main
-    echo [步骤 5/6] 设置默认分支为 main...
+    echo Setting default branch to main...
     git branch -M main
     echo.
 ) else (
-    echo [步骤 5/6] 当前分支: %CURRENT_BRANCH%
+    echo Current branch: %CURRENT_BRANCH%
     echo.
 )
 
-REM 推送到GitHub
-echo [步骤 6/6] 推送到GitHub...
-echo 正在推送到远程仓库...
+REM Push to GitHub
+echo [Step 7/7] Pushing to GitHub...
+echo Pushing to remote repository...
 git push -u origin %CURRENT_BRANCH%
 
 if errorlevel 1 (
     echo.
     echo ====================================
-    echo 推送失败！
+    echo Push Failed!
     echo ====================================
     echo.
-    echo 可能的原因：
-    echo 1. 需要先在GitHub上创建仓库
-    echo 2. 需要配置Git凭据
-    echo 3. 网络连接问题
-    echo.
-    echo 如果是首次推送，请确保：
-    echo - 已在GitHub创建 ESP32-Watch 仓库
-    echo - 已配置Git用户名和邮箱：
-    echo   git config --global user.name "你的用户名"
-    echo   git config --global user.email "你的邮箱"
+    echo Possible reasons:
+    echo 1. Repository not created on GitHub
+    echo 2. Authentication required
+    echo 3. Network connection issue
+    echo 4. Branch conflicts - try: git pull origin %CURRENT_BRANCH% --rebase
     echo.
     pause
     exit /b 1
 ) else (
     echo.
     echo ====================================
-    echo 上传成功！
+    echo Upload Successful!
     echo ====================================
     echo.
-    echo 项目已成功推送到：
+    echo Project pushed to:
     echo https://github.com/suci135/ESP32-Watch
     echo.
 )

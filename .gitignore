@@ -10,26 +10,26 @@ build/
 .vscode/ipch
 .vscode/*.db
 
-# 编译输出
+# Compiled output
 *.o
 *.a
 *.elf
 *.bin
 *.map
 
-# 系统文件
+# System files
 .DS_Store
 Thumbs.db
 desktop.ini
 
-# 临时文件
+# Temporary files
 *.tmp
 *.bak
 *.swp
 *~
 
-# 日志文件
+# Log files
 *.log
 
-# 依赖库缓存（如果不想提交）
+# Dependency cache (uncomment if you don't want to commit)
 # .pio/libdeps/
